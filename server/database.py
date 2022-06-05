@@ -14,6 +14,7 @@ from firebase_admin import credentials
 from firebase_admin import storage
 from enum import Enum
 from PIL import Image
+from server.utils import face_cropper
 
 env = Env()
 env.read_env()
@@ -55,19 +56,19 @@ def collection_switcher(arg):
     }
     return switcher.get(arg, None)
 
-async def retrieve_members_switcher(arg):
+async def retrieve_members_switcher(arg, short: bool = True):
     switcher = {
-        "student": await retrieve_students(),
-        "teaching_staff":   await retrieve_teaching_staffs(),
-        "non_teaching_staff": await retrieve_non_teaching_staffs(),
+        "student": await retrieve_students(short),
+        "teaching_staff":   await retrieve_teaching_staffs(short),
+        "non_teaching_staff": await retrieve_non_teaching_staffs(short),
     }
     return switcher.get(arg, None)
 
-async def retrieve_member_switcher(arg: str, id: str,):
+async def retrieve_member_switcher(arg: str, id: str, short: bool = True):
     switcher = {
-        "student": await retrieve_student(id),
-        "teaching_staff":   await retrieve_teaching_staff(id),
-        "non_teaching_staff": await retrieve_non_teaching_staff(id),
+        "student": await retrieve_student(id, short),
+        "teaching_staff":   await retrieve_teaching_staff(id, short),
+        "non_teaching_staff": await retrieve_non_teaching_staff(id, short),
     }
     return switcher.get(arg, None)
 
@@ -95,12 +96,26 @@ def student_helper(student) -> dict:
         "reg_no": student["reg_no"],
         "course": student["course"],
         "pics": student["pics"],
-        "embeddings": student["embeddings"]
+        "embeddings": student["embeddings"],
+        "augmentations": student["augmentations"]
     }
+
+def student_short_helper(student) -> dict:
+    return {
+        "id": str(student["_id"]),
+        "fullname": student["fullname"],
+        "reg_no": student["reg_no"],
+        "course": student["course"],
+        "pics": student["pics"],
+    }
+
 # Retrieve all students present in the database
-async def retrieve_students():
+async def retrieve_students(short: bool = True):
     students=[]
     for student in student_collection.find():
+        if short:
+             students.append(student_short_helper(student))
+
         students.append(student_helper(student))
     return students
 
@@ -111,9 +126,12 @@ async def add_student(student_data: dict) -> dict:
     return student_helper(new_student)
 
 # Retrieve a student with a matching ID
-async def retrieve_student(id: str)-> dict:
+async def retrieve_student(id: str, short: bool = True)-> dict:
     student =  student_collection.find_one({"_id": ObjectId(id)})
     if student:
+        if short:
+            return student_short_helper(student)
+
         return student_helper(student)
 
 # Update a student with a matching ID
@@ -150,7 +168,18 @@ def staff_helper(staff) -> dict:
         "department": staff["department"],
         "occupation": staff["occupation"],
         "pics": staff["pics"],
-        "embeddings": staff["embeddings"]
+        "embeddings": staff["embeddings"],
+        "augmentations": staff["augmentations"]
+    }
+
+def staff_short_helper(staff) -> dict:
+    return {
+        "id": str(staff["_id"]),
+        "fullname": staff["fullname"],
+        "work_id": staff["work_id"],
+        "department": staff["department"],
+        "occupation": staff["occupation"],
+        "pics": staff["pics"]
     }
 
 """
@@ -158,9 +187,12 @@ Teaching
 """
     
 # Retrieve all teaching staff present in the database
-async def retrieve_teaching_staffs():
+async def retrieve_teaching_staffs(short: bool = True):
     teaching_staffs=[]
     for teaching_staff in teaching_staff_collection.find():
+        if short:
+            teaching_staffs.append(staff_short_helper(teaching_staff))
+
         teaching_staffs.append(staff_helper(teaching_staff))
     return teaching_staffs
 
@@ -171,9 +203,12 @@ async def add_teaching_staff(teaching_staff_data: dict) -> dict:
     return staff_helper(new_teaching_staff)
 
 # Retrieve a teaching staff with a matching ID
-async def retrieve_teaching_staff(id: str)-> dict:
+async def retrieve_teaching_staff(id: str, short: bool = True)-> dict:
     teaching_staff =  teaching_staff_collection.find_one({"_id": ObjectId(id)})
     if teaching_staff:
+        if short:
+            return staff_short_helper(teaching_staff)
+
         return staff_helper(teaching_staff)
 
 # Update a teaching staff with a matching ID
@@ -202,9 +237,12 @@ Non Teaching
 """
     
 # Retrieve all Non teaching staff present in the database
-async def retrieve_non_teaching_staffs():
+async def retrieve_non_teaching_staffs(short: bool = True):
     non_teaching_staffs=[]
     for non_teaching_staff in non_teaching_staff_collection.find():
+        if short:
+            non_teaching_staffs.append(staff_short_helper(non_teaching_staff))
+
         non_teaching_staffs.append(staff_helper(non_teaching_staff))
     return non_teaching_staffs
 
@@ -215,9 +253,12 @@ async def add_non_teaching_staff(non_teaching_staff_data: dict) -> dict:
     return staff_helper(new_non_teaching_staff)
 
 # Retrieve a Non teaching staff with a matching ID
-async def retrieve_non_teaching_staff(id: str)-> dict:
+async def retrieve_non_teaching_staff(id: str, short: bool = True)-> dict:
     non_teaching_staff =  non_teaching_staff_collection.find_one({"_id": ObjectId(id)})
     if non_teaching_staff:
+        if short:
+            return staff_short_helper(non_teaching_staff)
+
         return staff_helper(non_teaching_staff)
 
 # Update a Non teaching staff with a matching ID
@@ -299,12 +340,9 @@ async def delete_visitor(id: str):
 """
 File
 """
-from server.routes.fr_model import(
-    face_cropper
-)
 
 #Save a file from file data
-async def upload_file(file, filename: str, folder: str = "media/images", content_type: str = "image/jpeg", required_size=(160, 160), detector = MTCNN()):
+async def upload_file(file, filename: str, folder: str = "media/images", content_type: str = "image/jpeg", detector = MTCNN(), required_size=(160, 160)):
     if file:
         #converting file bytes to Array of bytes
         image = np.asarray(bytearray(file), dtype="uint8")

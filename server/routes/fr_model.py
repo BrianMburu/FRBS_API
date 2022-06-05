@@ -1,26 +1,13 @@
 import numpy as np
 import cv2
 import pickle5 as pickle
-import urllib
-import json
-from PIL import Image
-from mtcnn.mtcnn import MTCNN
+
 from keras.models import load_model
 from fastapi import APIRouter, File, UploadFile
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import Normalizer
 from sklearn.model_selection import train_test_split
 from enum import Enum
-from random import choice
-from typing import List
-
-
-class MemberStorage(str, Enum):
-    student_storage = "student_storage"
-    teaching_staff_storage  = "teaching_staff_storage"
-    non_teaching_staff_storage = "non_teaching_staff_storage"
-    visitor_storage = "visitor_storage"
+from PIL import Image
 
 from server.database import (
     retrieve_members_switcher,
@@ -28,9 +15,17 @@ from server.database import (
     update_member_switcher,
     collection_switcher,
 
-    Member,
+    upload_file,
+    retrieve_file,
     
+    Member,
+)
 
+from server.utils import(
+    get_embedding, 
+    get_augmentations,
+    url_to_image,face_cropper,
+    encoder,
 )
 
 from server.models.student import (
@@ -44,73 +39,6 @@ router = APIRouter()
 # load the models
 embeddding_model = load_model('/home/brian/app/media/ml_models/facenet_keras.h5') #Facenet model
 classifier_model = pickle.load(open('/home/brian/app/media/ml_models/Knn_model.sav', 'rb')) #KNN model
-
-# Creating face embeddings
-def get_embedding(model, face_pixels):
-	# scale pixel values
-	face_pixels = face_pixels.astype('float32')
-	# standardize pixel values across channels (global)
-	mean, std = face_pixels.mean(), face_pixels.std()
-	face_pixels = (face_pixels - mean) / std
-	# transform face into one sample
-	samples = np.expand_dims(face_pixels, axis=0)
-	# make prediction to get embedding
-	embeddings = model.predict(samples)
-	return embeddings[0]
-
-#funtion to convert image downloaded from url to image arrays
-async def url_to_image(url):
-    # download the image, convert it to a NumPy array, and then read
-    # it into OpenCV format
-    
-    resp = urllib.request.urlopen(url)
-    image = np.asarray(bytearray(resp.read()), dtype="uint8")
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    face_array = np.asarray(image)
-    
-    # return the image array
-    return face_array
-
-#function to crop face from image using mtcnn
-def face_cropper(image, required_size=(160, 160), detector = MTCNN()):
-    if detector == None:
-        return image
-    image = Image.fromarray(image)       #open the image
-    if image:
-        image = image.convert('RGB')    #convert the image to RGB format 
-        face_pixels = np.asarray(image)      #convert the image to numpy array
-        face_pixels = cv2.cvtColor(face_pixels, cv2.COLOR_BGR2RGB)  #Converting the image from BGR to RGB
-        f = detector.detect_faces(face_pixels)
-        if f:
-            #fetching the (x,y)co-ordinate and (width-->w, height-->h) of the image
-            x1,y1,w,h = f[0]['box']             
-            x1, y1 = abs(x1), abs(y1)
-            x2 = abs(x1+w)
-            y2 = abs(y1+h)
-
-            #locate the co-ordinates of face in the image
-            store_face_cor = face_pixels[y1:y2, x1:x2]
-            face = Image.fromarray(store_face_cor,'RGB')  #convert the numpy array to object
-            face = face.resize(required_size)             #resize the image
-            face_array = np.asarray(face)                 #image to array
-            return face_array
-        return None
-        
-    return None
-    
-#function to encove x variables and y labels
-def encoder(x, y):
-    # normalize input vectors
-    in_encoder = Normalizer(norm='l2')
-    x = in_encoder.transform(x)
-    
-    # label encode targets
-    out_encoder = LabelEncoder()
-    out_encoder.fit(y)
-    y = out_encoder.transform(y)
-
-    return x, y, out_encoder
 
 #Facial Recognition biometrics system model train function
 def model_trainer(Model, members_data):
@@ -261,7 +189,7 @@ async def update_member_face_embeddings(Member: Member, id: str):
 
         await update_member_switcher(Member.value, id, {"embeddings": face_embeddings}) #update member embeddings
         return ResponseModel(
-            face_embeddings,
+            "Embeddings update was successful",
             f"Embeddings update was successfull.",
         )
 
@@ -271,6 +199,51 @@ async def update_member_face_embeddings(Member: Member, id: str):
         "Member does not exist!!"
     )
 
+@router.post("/{id}",response_description="Update Member's Face pixels Augmentations")
+async def update_member_face_augmentations(Member: Member, id: str, pic_name: str, folder="media/augmentations"):
+    #Retrieve a single member widh id
+    member = await retrieve_member_switcher(Member.value, id)
+
+    if member:
+        pic_url = await retrieve_file(pic_name)
+        aug_urls = list()
+        if pic_url:
+            pic_pixels = await url_to_image(pic_url)
+            pic_augs = get_augmentations(pic_pixels)
+            for i in range(len(pic_augs)):
+                im_buf_arr = cv2.imencode(".jpg", pic_augs[i])[1]
+                byte_im = im_buf_arr.tobytes()
+                img_aug_name = f"{pic_name}-aug{i}"
+                uploaded = await upload_file(byte_im, img_aug_name, folder, 'image/jpeg', None)
+                
+                if not uploaded:
+                    return ErrorResponseModel(
+                        "An error occured updating the member's picture augmented data",
+                        404,
+                        "Upload Failed Check Your Internet Connection!!"
+                    )
+                aug_url = await retrieve_file(img_aug_name)
+                aug_urls.append(aug_url)
+
+                
+            await update_member_switcher(Member.value, id, {"augmentations": {img_aug_name: aug_urls}})
+
+            return  ResponseModel(
+                f"{len(aug_urls)} Augmentations for {pic_name} updated successfully",
+                "Augmentations update was successfull.",
+            )
+        return ErrorResponseModel(
+            "An error occured updating the member's picture Augmented data",
+            404,
+            "Picture does not exist!!"
+        )
+
+    return ErrorResponseModel(
+        "An error occured updating the member's picture Augmented data",
+        404,
+        "Member does not exist!!"
+    )
+    
 @router.post("/predict",response_description="Retrieving Member'data from prediction")
 async def retrieve_facial_recognition_data(Member: Member, pic: UploadFile = File(...)):
     file_byts = pic.file.read()

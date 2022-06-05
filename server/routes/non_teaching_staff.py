@@ -27,8 +27,8 @@ async def add_non_teaching_staff_data(non_teaching_staff: NonTeachingStaffSchema
     return ResponseModel(new_non_teaching_staff,"non_teaching_staff added successfully")
 
 @router.get("/", response_description="non_teaching_staffs retrieved")
-async def get_non_teaching_staffs():
-    non_teaching_staffs = await retrieve_non_teaching_staffs()
+async def get_non_teaching_staffs(short: bool = True):
+    non_teaching_staffs = await retrieve_non_teaching_staffs(short)
     
     if non_teaching_staffs:
         return ResponseModel(non_teaching_staffs, "non_teaching_staffs data retrieved successfully")
@@ -36,8 +36,8 @@ async def get_non_teaching_staffs():
     return ResponseModel(non_teaching_staffs, "Empty list returned")
 
 @router.get("/{id}", response_description="non_teaching_staff data retrieved")
-async def get_non_teaching_staff_data(id: str):
-    non_teaching_staff = await retrieve_non_teaching_staff(id)
+async def get_non_teaching_staff_data(id: str, short: bool = True):
+    non_teaching_staff = await retrieve_non_teaching_staff(id, short)
     
     if non_teaching_staff:
         return ResponseModel(non_teaching_staff, "non_teaching_staff data retrieved successfully")

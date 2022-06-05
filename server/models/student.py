@@ -8,6 +8,7 @@ class StudentSchema(BaseModel):
     course: Optional[str] = Field(None, title = "Student Course")
     pics: list = Field([])
     embeddings: list = Field([])
+    augmentations: list = Field([])
 
     class config:
         schema_extra={
@@ -16,7 +17,8 @@ class StudentSchema(BaseModel):
                 "reg_no": "scm211-0001/2018",
                 "course": "Bsc Maths and Computer Science",
                 "pics": ["example.py.jpg"],
-                "embeddings": []
+                "embeddings": [],
+                "augmentations": []
             }
         }
 
@@ -27,6 +29,7 @@ class UpdateStudentModel(BaseModel):
     course: Optional[str]
     pics: Optional[list]
     embeddings: Optional[list]
+    augmentations: Optional[list]
 
     class config:
         schema_extra={
@@ -35,7 +38,8 @@ class UpdateStudentModel(BaseModel):
                 "reg_no": "scm211-0001/2018",
                 "course": "Bsc Maths and Computer Science",
                 "pics": ["example.jpg"],
-                "embeddings": []
+                "embeddings": [],
+                "augmentations": []
             }
         }
 
