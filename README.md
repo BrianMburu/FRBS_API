@@ -8,7 +8,6 @@ To be used in conjuction with a mobile or web application.
 
 ## To do
 
-- Add picture augmentation
-- Serve the api with gunicorn server
-- Adding testcases
-- Deployment
+- Add picture augmentation. Done
+- Adding testcases -Not Done
+- Deployment - NOT Done
