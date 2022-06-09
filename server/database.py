@@ -116,7 +116,8 @@ async def retrieve_students(short: bool = True):
         if short:
              students.append(student_short_helper(student))
 
-        students.append(student_helper(student))
+        else:
+            students.append(student_helper(student))
     return students
 
 # Add a new student into to the database
@@ -132,7 +133,8 @@ async def retrieve_student(id: str, short: bool = True)-> dict:
         if short:
             return student_short_helper(student)
 
-        return student_helper(student)
+        else:
+            return student_helper(student)
 
 # Update a student with a matching ID
 async def update_student(id: str,data: dict):
@@ -193,7 +195,8 @@ async def retrieve_teaching_staffs(short: bool = True):
         if short:
             teaching_staffs.append(staff_short_helper(teaching_staff))
 
-        teaching_staffs.append(staff_helper(teaching_staff))
+        else:
+            teaching_staffs.append(staff_helper(teaching_staff))
     return teaching_staffs
 
 # Add a new teaching staff into to the database
@@ -209,7 +212,8 @@ async def retrieve_teaching_staff(id: str, short: bool = True)-> dict:
         if short:
             return staff_short_helper(teaching_staff)
 
-        return staff_helper(teaching_staff)
+        else:
+            return staff_helper(teaching_staff)
 
 # Update a teaching staff with a matching ID
 async def update_teaching_staff(id: str,data: dict):
@@ -243,7 +247,8 @@ async def retrieve_non_teaching_staffs(short: bool = True):
         if short:
             non_teaching_staffs.append(staff_short_helper(non_teaching_staff))
 
-        non_teaching_staffs.append(staff_helper(non_teaching_staff))
+        else:
+            non_teaching_staffs.append(staff_helper(non_teaching_staff))
     return non_teaching_staffs
 
 # Add a new Non teaching staff into to the database
@@ -259,7 +264,8 @@ async def retrieve_non_teaching_staff(id: str, short: bool = True)-> dict:
         if short:
             return staff_short_helper(non_teaching_staff)
 
-        return staff_helper(non_teaching_staff)
+        else:
+            return staff_helper(non_teaching_staff)
 
 # Update a Non teaching staff with a matching ID
 async def update_non_teaching_staff(id: str,data: dict):

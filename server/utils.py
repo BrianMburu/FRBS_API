@@ -7,6 +7,12 @@ from PIL import Image
 from mtcnn.mtcnn import MTCNN
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import Normalizer
+from keras.models import load_model
+
+#Load Facenet Embedder
+def Facenet():
+    model = load_model('/home/brian/app/media/ml_models/facenet_keras.h5') #Facenet model
+    return model
 
 # Creating face embeddings
 def get_embedding(model, face_pixels):
@@ -25,20 +31,22 @@ def get_embedding(model, face_pixels):
 def get_augmentations(face_pixels):
     if face_pixels is not None:
         #flipping face_pixels in horizontally
+        pixels = copy.deepcopy(face_pixels)
+        
         aug_list = list()
-        face_pixels_hf = copy.deepcopy(face_pixels)
+        face_pixels_hf = copy.deepcopy(pixels)
         face_pixels_hf = np.flip(face_pixels_hf, axis=1)
         aug_list.append(face_pixels_hf)
 
         #LIghtening the face_pixels 
-        face_pixels_lt = copy.deepcopy(face_pixels)
-        rand_val_lt = round(np.random.uniform(0.2, 0.5), 3)
+        face_pixels_lt = copy.deepcopy(pixels)
+        rand_val_lt = round(np.random.uniform(1.5, 2.0), 3)
         for i in range(len(face_pixels_lt)):
             face_pixels_lt[i] = np.clip(rand_val_lt*face_pixels_lt[i], 0.0, 255.0)
         aug_list.append(face_pixels_lt)
         
         #darkening the face_pixels
-        face_pixels_dk = copy.deepcopy(face_pixels)
+        face_pixels_dk = copy.deepcopy(pixels)
         rand_val_dk = round(np.random.uniform(0.2, 0.5), 3)
         for i in range(len(face_pixels_dk)):
             face_pixels_dk[i] = np.clip(rand_val_dk*face_pixels_dk[i], 0.0, 255.0)
@@ -54,15 +62,16 @@ def get_augmentations(face_pixels):
 async def url_to_image(url):
     # download the image, convert it to a NumPy array, and then read
     # it into OpenCV format
-    
-    resp = urllib.request.urlopen(url)
-    image = np.asarray(bytearray(resp.read()), dtype="uint8")
-    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    face_array = np.asarray(image)
-    
-    # return the image array
-    return face_array
+    if url != None or url != "":
+        resp = urllib.request.urlopen(url)
+        image = np.asarray(bytearray(resp.read()), dtype="uint8")
+        image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        face_array = np.asarray(image)
+        
+        # return the image array
+        return face_array
+    return None
 
 #function to crop face from image using mtcnn
 def face_cropper(image, required_size=(160, 160), detector = MTCNN()):
@@ -103,3 +112,23 @@ def encoder(x, y):
     y = out_encoder.transform(y)
 
     return x, y, out_encoder
+
+#Function to fetch all embedings and their respective labels
+def data_fetcher(members):
+    pic_data = list()
+    pic_label= list()
+    emb_data = list()
+
+    #Fetching members data
+    for member in members:
+        if len(member["embeddings"])==0:
+            continue
+        emb_data = [list(i.values())[0] for i in member["embeddings"]]
+        pic_data.extend(np.array(emb_data))
+        all_lb = [member["fullname"] for _ in range(len(member["embeddings"]))]
+        pic_label.extend(all_lb)
+
+    pic_data = np.array(pic_data)   #X variables (embeddings).
+    pic_label = np.array(pic_label) #y labels
+
+    return pic_data, pic_label

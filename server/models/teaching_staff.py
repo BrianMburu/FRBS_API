@@ -17,8 +17,8 @@ class TeachingStaffSchema(BaseModel):
                 "fullname": "Brian Sentinel",
                 "work_id": "scm211-0001/2018",
                 "department": "Bsc Maths and Computer Science",
-                "occupation": "Student",
-                "pics": [[123,456,789]],
+                "occupation": "Lecturer",
+                "pics": [],
                 "embeddings": [],
                 "augmentations": []
             }
@@ -40,8 +40,8 @@ class UpdateTeachingStaffModel(BaseModel):
                 "fullname": "Brian Sentinel",
                 "work_id": "scm211-0001/2018",
                 "department": "Bsc Maths and Computer Science",
-                "occupation": "Student",
-                "pics": [[123,456,977]],
+                "occupation": "Lecturer",
+                "pics": [],
                 "embeddings": [],
                 "augmentations": []
             }

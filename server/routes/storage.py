@@ -30,10 +30,13 @@ async def add_pictures(Member: Member, id: str,  files: List[UploadFile] = File(
         filenames = ["" for _ in range(len(files))]
         if member:
             pics = member['pics']
+            face_pics_or = [list(i.keys())[0] for i in pics]
             for i in range(len(files)): 
                 if files[i] != None or files[i] != "":
                     #Swithing between realtime cropping and precropped pics
                     filenames[i] = files[i].filename
+                    if filenames[i] in face_pics_or:
+                        continue
                     file_byts = files[i].file.read()
                     upld = await upload_file(file_byts, filenames[i], folder, content_type)
                     if upld != False:
@@ -69,8 +72,10 @@ async def retrieve_pictures(Member: Member, folder: str = "media/images"):
     members = await retrieve_members_switcher(Member.value)
     if members:
         pics = list()
-        for member in members: 
-            for pic in member['pics']:
+        pic_names = list()
+        for member in members:
+            pic_names = [list(i.keys())[0] for i in member['pics']]
+            for pic in pic_names:
                 pic_url = await retrieve_file(pic, folder)
                 pics.append(pic_url)
                 
@@ -80,8 +85,8 @@ async def retrieve_pictures(Member: Member, folder: str = "media/images"):
     
 
 @router.get("/{id}/pictures/{filename}", response_description="Member retrieving a picture from Firestore Storage Bucket")
-async def retrieve_picture(member: Member, id: str, filename: str, folder: str = "media/images"):
-    member = await retrieve_member_switcher(Member.value, id)
+async def retrieve_picture(Member: Member, id: str, filename: str, folder: str = "media/images"):
+    member = await retrieve_member_switcher(Member.value, id, True)
     if member:
         if filename:
             pic_url = await retrieve_file(filename, folder)
