@@ -27,8 +27,8 @@ async def add_teaching_staff_data(teaching_staff: TeachingStaffSchema = Body(...
     return ResponseModel(new_teaching_staff,"teaching_staff added successfully")
 
 @router.get("/", response_description="teaching_staffs retrieved")
-async def get_teaching_staffs():
-    teaching_staffs = await retrieve_teaching_staffs()
+async def get_teaching_staffs(short: bool = True):
+    teaching_staffs = await retrieve_teaching_staffs(short)
     
     if teaching_staffs:
         return ResponseModel(teaching_staffs, "teaching_staffs data retrieved successfully")
@@ -36,8 +36,8 @@ async def get_teaching_staffs():
     return ResponseModel(teaching_staffs, "Empty list returned")
 
 @router.get("/{id}", response_description="teaching_staff data retrieved")
-async def get_teaching_staff_data(id: str):
-    teaching_staff = await retrieve_teaching_staff(id)
+async def get_teaching_staff_data(id: str, short: bool = True):
+    teaching_staff = await retrieve_teaching_staff(id, short)
     
     if teaching_staff:
         return ResponseModel(teaching_staff, "teaching_staff data retrieved successfully")

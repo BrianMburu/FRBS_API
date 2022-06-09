@@ -26,8 +26,8 @@ async def add_student_data(student: StudentSchema = Body(...)):
     return ResponseModel(new_student,"student added successfully")
 
 @router.get("/", response_description="students retrieved")
-async def get_students():
-    students = await retrieve_students()
+async def get_students(short: bool = True):
+    students = await retrieve_students(short)
     
     if students:
         return ResponseModel(students, "Students data retrieved successfully")
@@ -35,8 +35,8 @@ async def get_students():
     return ResponseModel(students, "Empty list returned")
 
 @router.get("/{id}", response_description="Student data retrieved")
-async def get_student_data(id: str):
-    student = await retrieve_student(id)
+async def get_student_data(id: str, short: bool = True):
+    student = await retrieve_student(id, short)
     
     if student:
         return ResponseModel(student, "Student data retrieved successfully")

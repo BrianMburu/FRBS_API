@@ -9,6 +9,7 @@ class NonTeachingStaffSchema(BaseModel):
     occupation: str = Field(...)
     pics: list = Field([])
     embeddings: list = Field([])
+    augmentations: list = Field([])
 
     class config:
         schema_extra={
@@ -17,8 +18,9 @@ class NonTeachingStaffSchema(BaseModel):
                 "work_id": "scm211-0001/2018",
                 "department": "Bsc Maths and Computer Science",
                 "occupation": "Student",
-                "pics": [[123,456,789]],
-                "embeddings": []
+                "pics": [],
+                "embeddings": [],
+                "augmentations": []
             }
         }
 
@@ -30,6 +32,8 @@ class UpdateNonTeachingStaffModel(BaseModel):
     occupation: Optional[str]
     pics: Optional[list]
     embeddings: Optional[list]
+    augmentations: Optional[list]
+    
 
     class config:
         schema_extra={
@@ -38,8 +42,9 @@ class UpdateNonTeachingStaffModel(BaseModel):
                 "work_id": "scm211-0001/2018",
                 "department": "Bsc Maths and Computer Science",
                 "occupation": "Student",
-                "pics": [[123,456,977]],
-                "embeddings": []
+                "pics": [],
+                "embeddings": [],
+                "augmentations": []
             }
         }
 
