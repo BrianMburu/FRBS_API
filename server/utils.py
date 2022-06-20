@@ -11,7 +11,7 @@ from keras.models import load_model
 
 #Load Facenet Embedder
 def Facenet():
-    model = load_model('/home/brian/app/media/ml_models/facenet_keras.h5') #Facenet model
+    model = load_model('/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/facenet_keras.h5') #Facenet model
     return model
 
 # Creating face embeddings

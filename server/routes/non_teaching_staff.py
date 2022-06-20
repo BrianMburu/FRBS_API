@@ -22,6 +22,12 @@ router = APIRouter()
 @router.post("/", response_description="nonteaching_staff data added into the database")
 async def add_non_teaching_staff_data(non_teaching_staff: NonTeachingStaffSchema = Body(...)):
     non_teaching_staff = jsonable_encoder(non_teaching_staff)
+    non_teaching_staffs = await retrieve_non_teaching_staffs()
+    work_ids = [non_teaching_staff["work_id"].lower() for non_teaching_staff in non_teaching_staffs]
+
+    if non_teaching_staff['work_id'].lower() in work_ids:
+        return ResponseModel("Error adding new non_teaching_staff","Non_teaching_staff already Exist!")
+
     new_non_teaching_staff = await add_non_teaching_staff(non_teaching_staff)
     
     return ResponseModel(new_non_teaching_staff,"non_teaching_staff added successfully")

@@ -39,7 +39,8 @@ fr_model_collecion = fr_model_database.fr_model_collecion
 
 
 #firestore Storage Config
-credentials = credentials.Certificate("/home/brian/app/ServiceAccountKey.json")
+CRED_PATH = env('CRED_PATH')
+credentials = credentials.Certificate(CRED_PATH)
 firebase_admin.initialize_app(credentials, {
     "storageBucket": env("STORAGE_BUCKET")
     })

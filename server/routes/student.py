@@ -1,3 +1,4 @@
+from re import A
 from fastapi import APIRouter, Body
 from fastapi.encoders import jsonable_encoder
 
@@ -21,9 +22,15 @@ router = APIRouter()
 @router.post("/", response_description="student data added into the database")
 async def add_student_data(student: StudentSchema = Body(...)):
     student = jsonable_encoder(student)
+    students = await retrieve_students()
+    regs = [student["reg_no"].lower() for student in students]
+
+    if student['reg_no'].lower() in regs:
+        return ResponseModel("Error adding new student","Student already Exist!")
+
     new_student = await add_student(student)
     
-    return ResponseModel(new_student,"student added successfully")
+    return ResponseModel(new_student,f"student added successfully")
 
 @router.get("/", response_description="students retrieved")
 async def get_students(short: bool = True):
