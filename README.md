@@ -8,6 +8,6 @@ To be used in conjuction with a mobile or web application.
 
 ## To do
 
-- Add picture augmentation. Done
-- Adding testcases -Not Done
-- Deployment - NOT Done
+- (Facenet Model) serving using tensorflow serving engine.
+- Error Case accurate handling.
+- Classification Model- Experience based learning implementation.
