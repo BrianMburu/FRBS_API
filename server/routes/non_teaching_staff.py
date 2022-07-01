@@ -57,8 +57,8 @@ async def update_non_teaching_staff_data(id: str, req: UpdateNonTeachingStaffMod
     
     if updated_non_teaching_staff:
         return ResponseModel(
-            "non_teaching_staff with ID: {} name update is successful".format(id),
-            "non_teaching_staff name updated successfully",
+            "non_teaching_staff with ID: {} data updated!".format(id),
+            "non_teaching_staff data updated successfully!!",
         )
                  
     return ErrorResponseModel(

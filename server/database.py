@@ -20,7 +20,7 @@ env = Env()
 env.read_env()
 
 #Mongo Database config
-MONGO_DETAILS = env("MONGO_DETAILS_T")
+MONGO_DETAILS = env("MONGO_DETAILS_P")
 
 #client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)     #Motor
 client = MongoClient(MONGO_DETAILS)     #PyMongo

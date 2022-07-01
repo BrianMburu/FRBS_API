@@ -30,50 +30,57 @@ async def update_member_face_augmentations(Member: Member, id: str, pic_name: st
 
     if member:
         augmentations = member["augmentations"]
+        pics = [list(i.keys())[0] for i in member["pics"]]
+        
         face_pics_ag = list()
         if len(augmentations)>0:
             face_pics_ag = [list(i.keys())[0] for i in augmentations]
-            
-        pic_url = await retrieve_file(pic_name)
-        #aug_urls = list()
-        #aug_names = list()
-        augs_idx = 0
-        if pic_url:
-            pic_pixels = await url_to_image(pic_url)
-            pic_augs = get_augmentations(pic_pixels)
-            for i in range(len(pic_augs)):
-                im_buf_arr = cv2.imencode(".jpg", pic_augs[i])[1]
-                byte_im = im_buf_arr.tobytes()
-                img_aug_name = f"{pic_name}-aug{i}"
-                if img_aug_name in face_pics_ag:
-                    continue
-                else:
-                    #aug_names.append(img_aug_name)
-                    uploaded = await upload_file(byte_im, img_aug_name, folder, 'image/jpeg', None)
-                    if uploaded:
-                        aug_url = await retrieve_file(img_aug_name, folder)
-                        augmentations = augmentations + [{img_aug_name: aug_url}]
-                        await update_member_switcher(Member.value, id, {"augmentations": augmentations})
-                        #aug_urls.append(aug_url)
-                        augs_idx += 1 
-                    else:
+        if pic_name in pics:  
+            pic_url = await retrieve_file(pic_name)
+            #aug_urls = list()
+            #aug_names = list()
+            augs_idx = 0
+            if pic_url:
+                pic_pixels = await url_to_image(pic_url)
+                pic_augs = get_augmentations(pic_pixels)
+                for i in range(len(pic_augs)):
+                    im_buf_arr = cv2.imencode(".jpg", pic_augs[i])[1]
+                    byte_im = im_buf_arr.tobytes()
+                    img_aug_name = f"{pic_name}-aug{i}"
+                    if img_aug_name in face_pics_ag:
                         continue
+                    else:
+                        #aug_names.append(img_aug_name)
+                        uploaded = await upload_file(byte_im, img_aug_name, folder, 'image/jpeg', None)
+                        if uploaded:
+                            aug_url = await retrieve_file(img_aug_name, folder)
+                            augmentations = augmentations + [{img_aug_name: aug_url}]
+                            await update_member_switcher(Member.value, id, {"augmentations": augmentations})
+                            #aug_urls.append(aug_url)
+                            augs_idx += 1 
+                        else:
+                            continue
 
-            if augs_idx < 3:
-                return ResponseModel(
-                    f"only {augs_idx} out of 3 augmentations uploaded",
-                    f"{3 - augs_idx} are broken or aleady exist!!"
+                if augs_idx < 3:
+                    return ResponseModel(
+                        f"only {augs_idx} out of 3 augmentations uploaded",
+                        f"{3 - augs_idx} are broken or aleady exist!!"
+                    )
+                return  ResponseModel(
+                    f"{augs_idx} Augmentations for {pic_name} updated successfully",
+                    "Augmentations update was successfull.",
                 )
-            return  ResponseModel(
-                f"{augs_idx} Augmentations for {pic_name} updated successfully",
-                "Augmentations update was successfull.",
+                
+            return ErrorResponseModel(
+                "An error occured updating the member's picture Augmented data",
+                404,
+                "Picture url is Broken!!"
             )
-            
         return ErrorResponseModel(
-            "An error occured updating the member's picture Augmented data",
-            404,
-            "Picture does not exist!!"
-        )
+                "An error occured updating the member's picture Augmented data",
+                404,
+                "Picture does not exist!! in user's pictures"
+            )
 
     return ErrorResponseModel(
         "An error occured updating the member's picture Augmented data",

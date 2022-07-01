@@ -57,8 +57,8 @@ async def update_teaching_staff_data(id: str, req: UpdateTeachingStaffModel=Body
     
     if updated_teaching_staff:
         return ResponseModel(
-            "teaching_staff with ID: {} name update is successful".format(id),
-            "teaching_staff name updated successfully",
+            "teaching_staff with ID: {} data updated!".format(id),
+            "teaching_staff data updated successfully!!",
         )
                  
     return ErrorResponseModel(

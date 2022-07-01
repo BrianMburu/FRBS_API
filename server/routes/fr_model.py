@@ -43,11 +43,11 @@ class Weights(str, Enum):
 
 #Facial Recognition biometrics system model train function
 async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
-    FILEPATH=f'/home/brian/app/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
+    FILEPATH=f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
 
     #Retrieve all Members data for train and test data
     members = await retrieve_members_switcher(Member, False)
-    X, y = data_fetcher(members)
+    X, y = data_fetcher(members, Member)
 
     #Splitting data into train and test labels (test=0.25)
     tr_x, te_x, tr_y, te_y = train_test_split(X, y, test_size=0.20, random_state=42)
@@ -60,7 +60,7 @@ async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
     trainX, testX, trainy, testy = train[0], test[0], train[1], test[1] 
 
     # fit model
-    model = model = KNeighborsClassifier(n_neighbors = Neighbours, weights = weight)
+    model = KNeighborsClassifier(n_neighbors = Neighbours, weights = weight)
     model.fit(trainX, trainy)
 
     #predict
@@ -91,7 +91,7 @@ async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
 
 #Function to enable model to make predictions
 async def predictor(member: str, face):
-    FILEPATH = f'/home/brian/app/media/ml_models/Knn_{member}_model.sav'
+    FILEPATH = f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{member}_model.sav'
     #Reading image from pic_Path, converting it to rgb, then finally resizing to 160*160
     #Precropped image
     """pic = path
@@ -110,7 +110,7 @@ async def predictor(member: str, face):
     val = face_cropper(face)
     if val is not None:
         members = await retrieve_members_switcher(member, False)
-        X, y = data_fetcher(members)            #fetching all data
+        X, y = data_fetcher(members, member)            #fetching all data
         X_e, y_e, out_encoder = encoder(X, y)   #encoding all data
 
         #fit model
@@ -120,7 +120,7 @@ async def predictor(member: str, face):
         model.fit(X_e, y_e)
 
         #Making Predictions on new data
-        val_emb = get_embedding(Facenet(), val)
+        val_emb = get_embedding(Facenet, val)
         val = np.expand_dims(val_emb, axis = 0)
         yhat_class = model.predict(val)
         yhat_prob = model.predict_proba(val)
@@ -131,7 +131,7 @@ async def predictor(member: str, face):
         predict_name = out_encoder.inverse_transform(yhat_class)
         
         return  {
-            "Predicted Name": "".join(str(x) for x in predict_name),
+            "Predicted Reg": "".join(str(x) for x in predict_name),
             "Prediction Score": class_probability
         }
 
@@ -143,9 +143,9 @@ async def face_data_retriever(member: str, face):
     #Running KNN machine learning algorithm to the train,test and validation data to get scores(probabilities)
     scores = await predictor(member, face)
     if scores:
-        if scores["Prediction Score"] >= 50:
-            name = scores["Predicted Name"]
-            pred_data = collection_switcher(member).find_one({"fullname" : name})
+        if scores["Prediction Score"] >= 90:
+            reg = scores["Predicted Reg"]
+            pred_data = collection_switcher(member).find_one({"reg_no" : reg}) if member == "student" else collection_switcher(member).find_one({"work_id" : reg})
             results = { "fullname":pred_data['fullname'],
                         "reg_no":  pred_data['reg_no'],
                         "course":  pred_data['course']
@@ -158,7 +158,7 @@ async def face_data_retriever(member: str, face):
                         "scores": scores,
                         "results": results
                         }),
-                    f"Member of name {name} is part of the institution",
+                    f"Member of name {pred_data['fullname']} is part of the institution",
                 )
                 
             return ErrorResponseModel(
@@ -169,14 +169,14 @@ async def face_data_retriever(member: str, face):
             
         else:
             return ResponseModel(
-                    f"Probability score({scores['Prediction Score']}) < 50%",
+                    f"Probability score({scores['Prediction Score']}) < 90%",
                     "Member Not Found",
                 )
 
     return ErrorResponseModel(
                 "An Error Occured",
                 400,
-                "Invalid Path"
+                "Invalid Path or Picture"
             )
 
 @router.get("/", response_description="All fr_model data retrieved")
