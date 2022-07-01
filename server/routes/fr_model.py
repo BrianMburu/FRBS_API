@@ -13,6 +13,10 @@ from enum import Enum
 from server.database import (
     retrieve_members_switcher,
     collection_switcher,
+    retrieve_all_fr_model_data,
+    retrieve_fr_model_data,
+    add_fr_model_data,
+    delete_fr_model_data,
     
     Member,
 )
@@ -25,7 +29,7 @@ from server.utils import(
     data_fetcher,
 )
 
-from server.models.student import (
+from server.models.fr_model import (
     ErrorResponseModel,
     ResponseModel,
 )
@@ -39,11 +43,11 @@ class Weights(str, Enum):
 
 #Facial Recognition biometrics system model train function
 async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
-    FILEPATH=f'/home/brian/app/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
+    FILEPATH=f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
 
     #Retrieve all Members data for train and test data
     members = await retrieve_members_switcher(Member, False)
-    X, y = data_fetcher(members)
+    X, y = data_fetcher(members, Member)
 
     #Splitting data into train and test labels (test=0.25)
     tr_x, te_x, tr_y, te_y = train_test_split(X, y, test_size=0.20, random_state=42)
@@ -56,7 +60,7 @@ async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
     trainX, testX, trainy, testy = train[0], test[0], train[1], test[1] 
 
     # fit model
-    model = model = KNeighborsClassifier(n_neighbors = Neighbours, weights = weight)
+    model = KNeighborsClassifier(n_neighbors = Neighbours, weights = weight)
     model.fit(trainX, trainy)
 
     #predict
@@ -87,7 +91,7 @@ async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
 
 #Function to enable model to make predictions
 async def predictor(member: str, face):
-    FILEPATH = f'/home/brian/app/media/ml_models/Knn_{member}_model.sav'
+    FILEPATH = f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{member}_model.sav'
     #Reading image from pic_Path, converting it to rgb, then finally resizing to 160*160
     #Precropped image
     """pic = path
@@ -102,11 +106,11 @@ async def predictor(member: str, face):
     rs_img=img.resize((160,160))
     val=np.asarray(rs_img)"""
 
-    #Realtime Cropping
+    #Realtime Cropping !MTCNN
     val = face_cropper(face)
     if val is not None:
         members = await retrieve_members_switcher(member, False)
-        X, y = data_fetcher(members)            #fetching all data
+        X, y = data_fetcher(members, member)            #fetching all data
         X_e, y_e, out_encoder = encoder(X, y)   #encoding all data
 
         #fit model
@@ -116,7 +120,7 @@ async def predictor(member: str, face):
         model.fit(X_e, y_e)
 
         #Making Predictions on new data
-        val_emb = get_embedding(Facenet(), val)
+        val_emb = get_embedding(Facenet, val)
         val = np.expand_dims(val_emb, axis = 0)
         yhat_class = model.predict(val)
         yhat_prob = model.predict_proba(val)
@@ -127,7 +131,7 @@ async def predictor(member: str, face):
         predict_name = out_encoder.inverse_transform(yhat_class)
         
         return  {
-            "Predicted Name": "".join(str(x) for x in predict_name),
+            "Predicted Reg": "".join(str(x) for x in predict_name),
             "Prediction Score": class_probability
         }
 
@@ -139,9 +143,9 @@ async def face_data_retriever(member: str, face):
     #Running KNN machine learning algorithm to the train,test and validation data to get scores(probabilities)
     scores = await predictor(member, face)
     if scores:
-        if scores["Prediction Score"] >= 50:
-            name = scores["Predicted Name"]
-            pred_data = collection_switcher(member).find_one({"fullname" : name})
+        if scores["Prediction Score"] >= 90:
+            reg = scores["Predicted Reg"]
+            pred_data = collection_switcher(member).find_one({"reg_no" : reg}) if member == "student" else collection_switcher(member).find_one({"work_id" : reg})
             results = { "fullname":pred_data['fullname'],
                         "reg_no":  pred_data['reg_no'],
                         "course":  pred_data['course']
@@ -154,7 +158,7 @@ async def face_data_retriever(member: str, face):
                         "scores": scores,
                         "results": results
                         }),
-                    f"Member of name {name} is part of the institution",
+                    f"Member of name {pred_data['fullname']} is part of the institution",
                 )
                 
             return ErrorResponseModel(
@@ -165,17 +169,35 @@ async def face_data_retriever(member: str, face):
             
         else:
             return ResponseModel(
-                    f"Probability score({scores['Prediction Score']}) < 50%",
+                    f"Probability score({scores['Prediction Score']}) < 90%",
                     "Member Not Found",
                 )
 
     return ErrorResponseModel(
                 "An Error Occured",
                 400,
-                "Invalid Path"
+                "Invalid Path or Picture"
             )
- 
-@router.post("/predict",response_description="Retrieving Member'data from prediction")
+
+@router.get("/", response_description="All fr_model data retrieved")
+async def get_all_fr_model_data():
+    all_fr_model = await retrieve_all_fr_model_data()
+    
+    if all_fr_model:
+        return ResponseModel(all_fr_model, "All fr_model data retrieved successfully")
+    
+    return ResponseModel(all_fr_model, "Empty list returned")
+
+@router.get("/{id}", response_description="fr_model data retrieved")
+async def get_fr_model_data(id: str):
+    fr_model = await retrieve_fr_model_data(id)
+    
+    if fr_model:
+        return ResponseModel(fr_model, "fr_model data retrieved successfully")
+    
+    return ErrorResponseModel("An error occurred", 404, "fr_model doesn't exist.")
+
+@router.put("/predict",response_description="Retrieved fr_model data from prediction")
 async def predict(Member: Member, pic: UploadFile = File(...)):
     file_byts = pic.file.read()   #Converting upload image to bytes
     #converting file bytes to Array of bytes
@@ -186,7 +208,38 @@ async def predict(Member: Member, pic: UploadFile = File(...)):
     data = await face_data_retriever(Member.value, face)
     return data
 
-@router.get("/train",response_description="Train the Machine Learning model and save it on server")
+@router.post("/train",response_description="Trained the Machine Learning model and saved it on server")
 async def train(Member: Member, weight: Weights, Neighbours: int):
-    data = await model_trainer(Member.value, Neighbours, weight.value)  
-    return data  
+    data = await model_trainer(Member.value, Neighbours, weight.value)
+    if data:
+        post_data = {
+            "Train_Score":data["Train_Score"],
+            "Test_Score":data["Test_Score"],
+            "Train_Time":data["Train_Time"],
+            "Data_Size":data["Data_Size"],
+            "Neighbours":data["Neighbours"],
+        }
+        await add_fr_model_data(post_data)
+        return ResponseModel(data,"data saved in the db")
+
+    return ErrorResponseModel(
+        "An error occurred", 
+        404, 
+        "The Data corrupted or None"
+    )
+
+@router.delete("/{id}", response_description="deleted fr_model data from the database")
+async def delete_fr_model_data(id: str):
+    deleted_fr_model_data = await delete_fr_model_data(id)
+    
+    if deleted_fr_model_data:
+        return ResponseModel(
+            "fr_model_data with ID: {} removed".format(id), 
+            "fr_model_data deleted successfully"
+        )
+    
+    return ErrorResponseModel(
+        "An error occurred", 
+        404, 
+        "fr_model_data with id {0} doesn't exist".format(id)
+    )

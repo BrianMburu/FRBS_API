@@ -10,9 +10,8 @@ from sklearn.preprocessing import Normalizer
 from keras.models import load_model
 
 #Load Facenet Embedder
-def Facenet():
-    model = load_model('/home/brian/app/media/ml_models/facenet_keras.h5') #Facenet model
-    return model
+Facenet = load_model('/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/facenet_keras.h5') #Facenet model
+
 
 # Creating face embeddings
 def get_embedding(model, face_pixels):
@@ -114,7 +113,7 @@ def encoder(x, y):
     return x, y, out_encoder
 
 #Function to fetch all embedings and their respective labels
-def data_fetcher(members):
+def data_fetcher(members, member_t):
     pic_data = list()
     pic_label= list()
     emb_data = list()
@@ -125,7 +124,7 @@ def data_fetcher(members):
             continue
         emb_data = [list(i.values())[0] for i in member["embeddings"]]
         pic_data.extend(np.array(emb_data))
-        all_lb = [member["fullname"] for _ in range(len(member["embeddings"]))]
+        all_lb = [member["reg_no"] for _ in range(len(member["embeddings"]))] if member_t=="student" else [member["work_id"] for _ in range(len(member["embeddings"]))]
         pic_label.extend(all_lb)
 
     pic_data = np.array(pic_data)   #X variables (embeddings).

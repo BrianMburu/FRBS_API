@@ -63,7 +63,7 @@ async def update_member_face_embeddings(Member: Member, id: str):
 
                 else:
                     face_pixels = np.array(face_pixels) # convert face pixels to arrays
-                    emb = get_embedding(Facenet(), face_pixels).tolist() #fetching embeddings for given face pixels
+                    emb = get_embedding(Facenet, face_pixels).tolist() #fetching embeddings for given face pixels
 
                     embeddings = embeddings+[{pic_n: emb}]
                     await update_member_switcher(Member.value, id, {"embeddings": embeddings}) #update member embeddings
@@ -99,17 +99,25 @@ async def delete_embeddings(Member: Member, id: str, filename: str = None , all:
         if filename != None:
             embeddings = member['embeddings']
             face_embd_dts = [i for i in embeddings] if len(embeddings)>0 else list()
+            face_embd_keys = [list(i.keys())[0] for i in embeddings] if len(embeddings)>0 else list()
             embeddings =  list(filter(lambda i : list(i.keys())[0] != filename, face_embd_dts))
 
-            await update_member_switcher(Member.value, id, {"embeddings": embeddings})
-            
-            return ResponseModel(
-                "Operation was successful",
-                f"Embeddings for {filename} deleted!"
+            if filename in face_embd_keys:
+                await update_member_switcher(Member.value, id, {"embeddings": embeddings})
+                
+                return ResponseModel(
+                    "Operation was successful",
+                    f"Embeddings for {filename} deleted!"
+                )
+
+            return ErrorResponseModel(
+                "An error occured deleting the member's picture embeddings data",
+                404,
+                "Filename not Found!!"
             )
 
     return ErrorResponseModel(
-        "An error occured updating the member's picture embeddings data",
+        "An error occured deleting the member's picture embeddings data",
         404,
         "Member does not exist!!"
     )

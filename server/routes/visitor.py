@@ -21,6 +21,12 @@ router = APIRouter()
 @router.post("/", response_description="Visitor data added into the database")
 async def add_visitor_data(visitor: VisitorSchema = Body(...)):
     visitor = jsonable_encoder(visitor)
+    visitors = await retrieve_visitors()
+    indexs = [visitor["index"].lower() for visitor in visitors]
+
+    if visitor['index'].lower() in indexs:
+        return ResponseModel("Error adding new visitor","Visitor already Exist!")
+
     new_visitor = await add_visitor(visitor)
     
     return ResponseModel(new_visitor,"Visitor added successfully")

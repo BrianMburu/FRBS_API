@@ -20,7 +20,7 @@ env = Env()
 env.read_env()
 
 #Mongo Database config
-MONGO_DETAILS = env("MONGO_DETAILS")
+MONGO_DETAILS = env("MONGO_DETAILS_P")
 
 #client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)     #Motor
 client = MongoClient(MONGO_DETAILS)     #PyMongo
@@ -29,15 +29,18 @@ student_database = client.students
 teaching_staff_database = client.teaching
 non_teaching_staff_database = client.non_teaching
 visitor_database = client.visitors
+fr_model_database = client.fr_model
 
 student_collection = student_database.student_collection
 teaching_staff_collection = teaching_staff_database.teaching_collection
 non_teaching_staff_collection = non_teaching_staff_database.non_teaching_collection
-visitor_collection = visitor_database.get_collection("visitors_collection")
+visitor_collection = visitor_database.visitors_collection
+fr_model_collecion = fr_model_database.fr_model_collecion
 
 
 #firestore Storage Config
-credentials = credentials.Certificate("/home/brian/app/ServiceAccountKey.json")
+CRED_PATH = env('CRED_PATH')
+credentials = credentials.Certificate(CRED_PATH)
 firebase_admin.initialize_app(credentials, {
     "storageBucket": env("STORAGE_BUCKET")
     })
@@ -311,13 +314,13 @@ async def retrieve_visitors():
 
 # Add a new visitor into to the database
 async def add_visitor(visitor_data: dict) -> dict:
-    visitor = await visitor_collection.insert_one(visitor_data)
+    visitor = visitor_collection.insert_one(visitor_data)
     new_visitor = await visitor_collection.find_one({"_id": visitor.inserted_id})
     return visitor_helper(new_visitor)
 
 # Retrieve a visitor with a matching ID
 async def retrieve_visitor(id: str)-> dict:
-    visitor = await visitor_collection.find_one({"_id": ObjectId(id)})
+    visitor = visitor_collection.find_one({"_id": ObjectId(id)})
     if visitor:
         return visitor_helper(visitor)
 
@@ -326,9 +329,9 @@ async def update_visitor(id: str,data: dict):
     #Return false if an empty request body is sent.
     if len(data) < 1:
         return False
-    visitor = await visitor_collection.find_one({"_id": ObjectId(id)})
+    visitor =  visitor_collection.find_one({"_id": ObjectId(id)})
     if visitor:
-        updated_visitor = await visitor_collection.update_one(
+        updated_visitor =  visitor_collection.update_one(
             {"_id": ObjectId(id)}, {"$set": data}
         )
         if updated_visitor:
@@ -337,9 +340,9 @@ async def update_visitor(id: str,data: dict):
 
 # Delete a visitor from the database
 async def delete_visitor(id: str):
-    visitor = await visitor_collection.find_one({"_id": ObjectId(id)})
+    visitor =  visitor_collection.find_one({"_id": ObjectId(id)})
     if visitor:
-        await visitor_collection.delete_one({"_id": ObjectId(id)})
+        visitor_collection.delete_one({"_id": ObjectId(id)})
         return True
 
 
@@ -384,3 +387,44 @@ async def delete_file(filename: str, folder: str = "media/images"):
         blob.delete()
         return True
     return False
+
+
+"""
+Fr Model
+"""
+# Fr_model Helper
+def fr_model_helper(ft_model) -> dict:
+    return {
+        "id": str(ft_model["_id"]),
+        "Train_Score": str(ft_model["Train_Score"]),
+        "Test_Score": ft_model["Test_Score"],
+        "Train_Time": ft_model["Train_Time"],
+        "Data_Size": ft_model["Data_Size"],
+        "Neighbours": ft_model["Neighbours"],
+    }
+
+# Retrieve all fr_model data present in the database
+async def retrieve_all_fr_model_data():
+    fr_data=[]
+    for data in fr_model_collecion.find():
+        fr_data.append(fr_model_helper(data))
+    return fr_data
+
+# Add a new facial Recognition model data into to the database
+async def add_fr_model_data(fr_data_data: dict) -> dict:
+    fr_data =  fr_model_collecion.insert_one(fr_data_data)
+    new_fr_data = fr_model_collecion.find_one({"_id": fr_data.inserted_id})
+    return fr_model_helper(new_fr_data)
+
+# Retrieve facial Recognition model data with a matching ID
+async def retrieve_fr_model_data(id: str)-> dict:
+    fr_data = fr_model_collecion.find_one({"_id": ObjectId(id)})
+    if fr_data:
+        return fr_model_helper(fr_data)
+
+# Delete facial Recognition model data from the database
+async def delete_fr_model_data(id: str):
+    fr_data =  fr_model_collecion.find_one({"_id": ObjectId(id)})
+    if fr_data:
+        fr_model_collecion.delete_one({"_id": ObjectId(id)})
+        return True
