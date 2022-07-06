@@ -43,42 +43,60 @@ async def get_non_teaching_staffs(short: bool = True):
 
 @router.get("/{id}", response_description="non_teaching_staff data retrieved")
 async def get_non_teaching_staff_data(id: str, short: bool = True):
-    non_teaching_staff = await retrieve_non_teaching_staff(id, short)
-    
-    if non_teaching_staff:
-        return ResponseModel(non_teaching_staff, "non_teaching_staff data retrieved successfully")
-    
-    return ErrorResponseModel("An error occurred", 404, "non_teaching_staff doesn't exist.")
+    try:
+        non_teaching_staff = await retrieve_non_teaching_staff(id, short)
+        
+        if non_teaching_staff:
+            return ResponseModel(non_teaching_staff, "non_teaching_staff data retrieved successfully")
+        
+        return ErrorResponseModel("An error occurred", 404, "non_teaching_staff doesn't exist.")
+    except (Exception, RuntimeError, TimeoutError) as err:
+        return ErrorResponseModel( 
+            "An error occured while retrieving the staff's data",
+            404, 
+            str(err))
 
 @router.put("/{id}")
 async def update_non_teaching_staff_data(id: str, req: UpdateNonTeachingStaffModel=Body(...)):
-    req = {k: v for k,v in req.dict().items() if v is not None}
-    updated_non_teaching_staff = await update_non_teaching_staff(id,req)
-    
-    if updated_non_teaching_staff:
-        return ResponseModel(
-            "non_teaching_staff with ID: {} data updated!".format(id),
-            "non_teaching_staff data updated successfully!!",
+    try:
+        req = {k: v for k,v in req.dict().items() if v is not None}
+        updated_non_teaching_staff = await update_non_teaching_staff(id,req)
+        
+        if updated_non_teaching_staff:
+            return ResponseModel(
+                "non_teaching_staff with ID: {} data updated!".format(id),
+                "non_teaching_staff data updated successfully!!",
+            )
+                    
+        return ErrorResponseModel(
+            "An error occured",
+            404,
+            "There was an error updating the non_teaching_staff data."
         )
-                 
-    return ErrorResponseModel(
-        "An error occured",
-        404,
-        "There was an error updating the non_teaching_staff data."
-    )
+    except (Exception, RuntimeError, TimeoutError) as err:
+        return ErrorResponseModel( 
+            "An error occured while updating the staff data",
+            404, 
+            str(err))
 
 @router.delete("/{id}", response_description="non_teaching_staff data deleted from the database")
 async def delete_non_teaching_staff_data(id: str):
-    deleted_non_teaching_staff = await delete_non_teaching_staff(id)
-    
-    if deleted_non_teaching_staff:
-        return ResponseModel(
-            "non_teaching_staff with ID: {} removed".format(id), 
-            "non_teaching_staff deleted successfully"
+    try:
+        deleted_non_teaching_staff = await delete_non_teaching_staff(id)
+        
+        if deleted_non_teaching_staff:
+            return ResponseModel(
+                "non_teaching_staff with ID: {} removed".format(id), 
+                "non_teaching_staff deleted successfully"
+            )
+        
+        return ErrorResponseModel(
+            "An error occurred", 
+            404, 
+            "non_teaching_staff with id {0} doesn't exist".format(id)
         )
-    
-    return ErrorResponseModel(
-        "An error occurred", 
-        404, 
-        "non_teaching_staff with id {0} doesn't exist".format(id)
-    )
+    except (Exception, RuntimeError, TimeoutError) as err:
+        return ErrorResponseModel( 
+            "An error occured while deleting the staff's data ",
+            404, 
+            str(err))
