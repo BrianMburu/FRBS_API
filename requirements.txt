@@ -6,7 +6,7 @@ h5py==2.10.0
 Keras==2.1.2
 mtcnn==0.1.1
 opencv-python==4.5.5.64
-pickle5==0.0.12
+pickle5
 Pillow==8.4.0
 pytz==2022.1
 pydantic==1.9.0
