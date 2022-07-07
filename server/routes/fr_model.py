@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import pickle5 as pickle
+import os
 from keras.models import load_model
 from fastapi import APIRouter, File, UploadFile
 from sklearn.metrics import accuracy_score
@@ -27,6 +28,7 @@ from server.utils import(
     face_cropper,
     encoder,
     data_fetcher,
+    MEDIA_PATH
 )
 
 from server.models.fr_model import (
@@ -43,7 +45,7 @@ class Weights(str, Enum):
 
 #Facial Recognition biometrics system model train function
 async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
-    FILEPATH=f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
+    FILEPATH=os.path.join(MEDIA_PATH,'ml_models',f'Knn_{Member}_model.sav')    #Storage Path
 
     #Retrieve all Members data for train and test data
     members = await retrieve_members_switcher(Member, False)
@@ -199,47 +201,70 @@ async def get_fr_model_data(id: str):
 
 @router.put("/predict",response_description="Retrieved fr_model data from prediction")
 async def predict(Member: Member, pic: UploadFile = File(...)):
-    file_byts = pic.file.read()   #Converting upload image to bytes
-    #converting file bytes to Array of bytes
-    face = np.asarray(bytearray(file_byts), dtype="uint8")
-    face = cv2.imdecode(face, cv2.IMREAD_COLOR)   #decoding bytesarray to Image Array
-    face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)  #Converting the image from BGR to RGB
+    try:
+        file_byts = pic.file.read()   #Converting upload image to bytes
+        #converting file bytes to Array of bytes
+        face = np.asarray(bytearray(file_byts), dtype="uint8")
+        face = cv2.imdecode(face, cv2.IMREAD_COLOR)   #decoding bytesarray to Image Array
+        face = cv2.cvtColor(face, cv2.COLOR_BGR2RGB)  #Converting the image from BGR to RGB
 
-    data = await face_data_retriever(Member.value, face)
-    return data
+        data = await face_data_retriever(Member.value, face)
+    except (TimeoutError, MemoryError, ResourceWarning, RuntimeError) as err:
+            return ErrorResponseModel( 
+                "An error occured while Making Prediction", 
+                404, 
+                str(err))
+    except Exception as err:
+        return ErrorResponseModel( 
+                "An error occured while Making Prediction", 
+                404, 
+                f"Invalid Image: Exception => {str(err)}")
+    else:
+        return data
 
 @router.post("/train",response_description="Trained the Machine Learning model and saved it on server")
 async def train(Member: Member, weight: Weights, Neighbours: int):
-    data = await model_trainer(Member.value, Neighbours, weight.value)
-    if data:
-        post_data = {
-            "Train_Score":data["Train_Score"],
-            "Test_Score":data["Test_Score"],
-            "Train_Time":data["Train_Time"],
-            "Data_Size":data["Data_Size"],
-            "Neighbours":data["Neighbours"],
-        }
-        await add_fr_model_data(post_data)
-        return ResponseModel(data,"data saved in the db")
+    try:
+        data = await model_trainer(Member.value, Neighbours, weight.value)
+        if data:
+            post_data = {
+                "Train_Score":data["Train_Score"],
+                "Test_Score":data["Test_Score"],
+                "Train_Time":data["Train_Time"],
+                "Data_Size":data["Data_Size"],
+                "Neighbours":data["Neighbours"],
+            }
+            await add_fr_model_data(post_data)
+            return ResponseModel(data,"data saved in the db")
 
-    return ErrorResponseModel(
-        "An error occurred", 
-        404, 
-        "The Data corrupted or None"
-    )
+        return ErrorResponseModel(
+            "An error occurred", 
+            404, 
+            "The Data corrupted or None"
+        )
+    except (ValueError, TimeoutError, MemoryError, ResourceWarning, RuntimeError) as err:
+        return ErrorResponseModel( 
+            "An error occured while Training Model", 
+            404, 
+            str(err))
 
 @router.delete("/{id}", response_description="deleted fr_model data from the database")
 async def delete_fr_model_data(id: str):
-    deleted_fr_model_data = await delete_fr_model_data(id)
-    
-    if deleted_fr_model_data:
-        return ResponseModel(
-            "fr_model_data with ID: {} removed".format(id), 
-            "fr_model_data deleted successfully"
+    try:
+        deleted_fr_model_data = await delete_fr_model_data(id)
+        if deleted_fr_model_data:
+            return ResponseModel(
+                "fr_model_data with ID: {} removed".format(id), 
+                "fr_model_data deleted successfully"
+            )
+        
+        return ErrorResponseModel(
+            "An error occurred", 
+            404, 
+            "fr_model_data with id {0} doesn't exist".format(id)
         )
-    
-    return ErrorResponseModel(
-        "An error occurred", 
-        404, 
-        "fr_model_data with id {0} doesn't exist".format(id)
-    )
+    except ( TimeoutError, MemoryError, ResourceWarning, RuntimeError) as err:
+        return ErrorResponseModel(
+            " An error occured while deleting Trained Model instance",
+            404, 
+            str(err))
