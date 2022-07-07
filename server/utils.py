@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import urllib
 import copy
+import os
 
 from PIL import Image
 from mtcnn.mtcnn import MTCNN
@@ -9,8 +10,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import Normalizer
 from keras.models import load_model
 
+MEDIA_PATH = os.path.basename("/media")
 #Load Facenet Embedder
-Facenet = load_model('/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/facenet_keras.h5') #Facenet model
+Facenet = load_model(os.path.join(MEDIA_PATH,'ml_models','facenet_keras.h5')) #Facenet model
 
 
 # Creating face embeddings

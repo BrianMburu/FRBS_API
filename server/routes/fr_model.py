@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import pickle5 as pickle
+import os
 from keras.models import load_model
 from fastapi import APIRouter, File, UploadFile
 from sklearn.metrics import accuracy_score
@@ -27,6 +28,7 @@ from server.utils import(
     face_cropper,
     encoder,
     data_fetcher,
+    MEDIA_PATH
 )
 
 from server.models.fr_model import (
@@ -43,7 +45,7 @@ class Weights(str, Enum):
 
 #Facial Recognition biometrics system model train function
 async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
-    FILEPATH=f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{Member}_model.sav'    #Storage Path
+    FILEPATH=os.path.join(MEDIA_PATH,'ml_models',f'Knn_{Member}_model.sav')    #Storage Path
 
     #Retrieve all Members data for train and test data
     members = await retrieve_members_switcher(Member, False)
