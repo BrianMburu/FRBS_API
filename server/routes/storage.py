@@ -123,7 +123,7 @@ async def delete_picture(Member: Member, id: str, filename: str, folder: str = "
         member = await retrieve_member_switcher(Member.value, id)   #TIMEOUT EXCEPTION
         if member:
                 pics = member['pics']
-                pic_names = [list(i.keys)(0) for i in pics] if len(pics)>0 else list()
+                pic_names = [list(i.keys())[0] for i in pics] if len(pics)>0 else list()
                 if filename in pic_names:
                     await delete_file(filename, folder)     #TIMEOUT EXCEPTION
                     pics = list(filter(lambda i : list(i.keys())[0] != filename, pics)) #Deleting file dictionary from database
