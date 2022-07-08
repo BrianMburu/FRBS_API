@@ -1,8 +1,0 @@
-__pycache__/
-.env
-*.h5
-*.json
-*.jpg
-*.jpeg
-*.png
-*.sav
