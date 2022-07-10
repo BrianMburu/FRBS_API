@@ -4,4 +4,5 @@ __pycache__/
 *.jpg
 *.jpeg
 *.png
+*.h5
 *.sav
