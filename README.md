@@ -15,7 +15,7 @@ To be used in conjuction with a mobile or web application.
 
 ## To do
 
-- Provide a requirement.txt file.
+- Provide a requirement.txt file. --Done
 - (Facenet Model) serving using tensorflow serving engine.
 - Error Case accurate handling. --Done
 - Classification Model- Experience based learning implementation. --Done
