@@ -2,6 +2,7 @@ import firebase_admin
 import os
 import cv2
 import numpy as np
+import requests
 import io
 #import gridfs
 #import pyrebase
@@ -20,7 +21,7 @@ env = Env()
 env.read_env()
 
 #Mongo Database config
-MONGO_DETAILS = env("MONGO_DETAILS_P")
+MONGO_DETAILS = env(f"{env('DEPLOYMENT_NAME')}")
 
 #client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_DETAILS)     #Motor
 client = MongoClient(MONGO_DETAILS)     #PyMongo
@@ -39,8 +40,19 @@ fr_model_collecion = fr_model_database.fr_model_collecion
 
 
 #firestore Storage Config
+IS_FILE = False
 CRED_PATH = env('CRED_PATH')
-credentials = credentials.Certificate(CRED_PATH)
+IS_FILE = os.path.isfile(CRED_PATH)
+
+if IS_FILE:
+    credentials = credentials.Certificate(CRED_PATH)
+else:
+    r = requests.get(env("FIREBASE_CRED_URL"), stream = True)
+
+    with open(CRED_PATH, "wb") as f:
+        f.write(r.content)
+    credentials = credentials.Certificate(CRED_PATH)
+    
 firebase_admin.initialize_app(credentials, {
     "storageBucket": env("STORAGE_BUCKET")
     })

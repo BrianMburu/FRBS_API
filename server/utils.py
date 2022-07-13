@@ -3,17 +3,33 @@ import cv2
 import urllib
 import copy
 import os
+import requests
 
 from PIL import Image
 from mtcnn.mtcnn import MTCNN
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import Normalizer
 from keras.models import load_model
+from environs import Env
 
-MEDIA_PATH = os.path.basename("/media")
+env = Env()
+env.read_env()
+IS_FILE = False
+MEDIA_PATH = os.path.basename(env("MEDIA_PATH"))
+
+FACENET_PATH = os.path.join(MEDIA_PATH,'ml_models','facenet_keras.h5')
+IS_FILE = os.path.isfile(FACENET_PATH)
 #Load Facenet Embedder
-Facenet = load_model(os.path.join(MEDIA_PATH,'ml_models','facenet_keras.h5')) #Facenet model
-
+if IS_FILE:
+    Facenet = load_model(FACENET_PATH) #Facenet model
+else:
+    r = requests.get(env("FACENET_URL"), stream = True)
+    with open(FACENET_PATH, "wb") as h5:
+        for chunk in r.iter_content(chunk_size=1024):
+            # writing one chunk at a time to h5 file
+            if chunk:
+                h5.write(chunk)
+    Facenet = load_model(FACENET_PATH)
 
 # Creating face embeddings
 def get_embedding(model, face_pixels):
