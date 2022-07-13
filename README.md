@@ -8,6 +8,7 @@ To be used in conjuction with a mobile or web application.
 
 ## Requirements
 
+- Python 3.6 env
 - Create a file named .env in projects root.
 - Facenet pretrained model is required for this api to work. Add the path to the .env(in project's root) file and assign it to the variable name same as one provided or change as you wish.
 - Add Mongodb Atlas url to the .env and assigh it to the variable name same as one provided or change as you wish.
@@ -15,7 +16,9 @@ To be used in conjuction with a mobile or web application.
 
 ## To do
 
-- Provide a requirement.txt file. --Done
+- Provide a requirement.txt file.
 - (Facenet Model) serving using tensorflow serving engine.
 - Error Case accurate handling. --Done
 - Classification Model- Experience based learning implementation. --Done
+- API deployment --Done -> Azure VM
+- Code Take through.

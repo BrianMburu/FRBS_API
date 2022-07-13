@@ -93,7 +93,7 @@ async def model_trainer(Member: str, Neighbours: int, weight: str = "distance"):
 
 #Function to enable model to make predictions
 async def predictor(member: str, face):
-    FILEPATH = f'/home/brian/Documents/Projects/School Project/frbs_api/media/ml_models/Knn_{member}_model.sav'
+    FILEPATH=os.path.join(MEDIA_PATH,'ml_models',f'Knn_{member}_model.sav')
     #Reading image from pic_Path, converting it to rgb, then finally resizing to 160*160
     #Precropped image
     """pic = path
@@ -192,12 +192,18 @@ async def get_all_fr_model_data():
 
 @router.get("/{id}", response_description="fr_model data retrieved")
 async def get_fr_model_data(id: str):
-    fr_model = await retrieve_fr_model_data(id)
-    
-    if fr_model:
-        return ResponseModel(fr_model, "fr_model data retrieved successfully")
-    
-    return ErrorResponseModel("An error occurred", 404, "fr_model doesn't exist.")
+    try:
+        fr_model = await retrieve_fr_model_data(id)
+        
+        if fr_model:
+            return ResponseModel(fr_model, "fr_model data retrieved successfully")
+        
+        return ErrorResponseModel("An error occurred", 404, "fr_model doesn't exist.")
+    except (Exception, RuntimeError, TimeoutError) as err:
+        return ErrorResponseModel( 
+            "An error occured while retrieving the fr_model data",
+            404, 
+            str(err))
 
 @router.put("/predict",response_description="Retrieved fr_model data from prediction")
 async def predict(Member: Member, pic: UploadFile = File(...)):
